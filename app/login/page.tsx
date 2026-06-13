@@ -1,49 +1,41 @@
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { createToken } from "@/lib/auth";
 
-export default async function LoginPage() {
-  const token = (await cookies()).get("craft_token")?.value;
+export async function POST(req: Request) {
+  const formData = await req.formData();
 
-  if (token) {
-    try {
-      await verifyToken(token);
-      redirect("/admin");
-    } catch { }
+  const email = String(formData.get("email") || "").trim();
+  const password = String(formData.get("password") || "");
+
+  const user = await prisma.adminUser.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    redirect("/login?error=invalid");
   }
 
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950">
-      <form
-        action="/api/auth/login"
-        method="POST"
-        className="w-full max-w-md rounded-3xl bg-white p-6"
-      >
-        <h1 className="text-3xl font-black">
-          Craft Billing
-        </h1>
+  const valid = await bcrypt.compare(password, user.password);
 
-        <div className="mt-5">
-          <input
-            name="email"
-            placeholder="Email"
-            className="w-full rounded-2xl border px-4 py-3"
-          />
-        </div>
+  if (!valid) {
+    redirect("/login?error=invalid");
+  }
 
-        <div className="mt-3">
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            className="w-full rounded-2xl border px-4 py-3"
-          />
-        </div>
+  const token = await createToken({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  });
 
-        <button className="mt-5 w-full cursor-pointer rounded-2xl bg-emerald-500 px-4 py-3 font-black">
-          Login
-        </button>
-      </form>
-    </main>
-  );
+  (await cookies()).set("craft_token", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  redirect("/admin");
 }
