@@ -1,41 +1,63 @@
-import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { createToken } from "@/lib/auth";
+import { verifyToken } from "@/lib/auth";
 
-export async function POST(req: Request) {
-  const formData = await req.formData();
+type Props = {
+  searchParams: Promise<{
+    error?: string;
+  }>;
+};
 
-  const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams;
 
-  const user = await prisma.adminUser.findUnique({
-    where: { email },
-  });
+  const token = (await cookies()).get("craft_token")?.value;
 
-  if (!user) {
-    redirect("/login?error=invalid");
+  if (token) {
+    try {
+      await verifyToken(token);
+      redirect("/admin");
+    } catch { }
   }
 
-  const valid = await bcrypt.compare(password, user.password);
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <form
+        action="/api/auth/login"
+        method="POST"
+        className="w-full max-w-md rounded-3xl bg-white p-6"
+      >
+        <h1 className="text-3xl font-black">Craft Billing</h1>
 
-  if (!valid) {
-    redirect("/login?error=invalid");
-  }
+        {params.error === "invalid" && (
+          <p className="mt-4 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">
+            Invalid email or password.
+          </p>
+        )}
 
-  const token = await createToken({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  });
+        <div className="mt-5">
+          <input
+            name="email"
+            placeholder="Email"
+            required
+            className="w-full rounded-2xl border px-4 py-3"
+          />
+        </div>
 
-  (await cookies()).set("craft_token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  });
+        <div className="mt-3">
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+            className="w-full rounded-2xl border px-4 py-3"
+          />
+        </div>
 
-  redirect("/admin");
+        <button className="mt-5 w-full cursor-pointer rounded-2xl bg-emerald-500 px-4 py-3 font-black">
+          Login
+        </button>
+      </form>
+    </main>
+  );
 }
