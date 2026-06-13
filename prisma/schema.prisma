@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+model AdminUser {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+}
+
+model Router {
+  id        String   @id @default(cuid())
+  name      String
+  host      String
+  username  String
+  password  String
+  port      Int      @default(8728)
+  location  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model InternetSession {
+  id               String   @id @default(cuid())
+  customerId       String
+  packageId        String
+  mac              String?
+  username         String?
+  password         String?
+  expiresAt        DateTime
+  active           Boolean  @default(true)
+  activationStatus String   @default("PENDING")
+  activationError  String?
+  createdAt        DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String?
+  mac       String?
+  createdAt DateTime @default(now())
+
+  payments  Payment[]
+  sessions  InternetSession[]
+  freeTrialUsed Boolean @default(false)
+  freeTrialUsedAt DateTime?
+  blocked Boolean @default(false)
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  customerId  String?
+  packageId   String?
+  phone       String
+  amount      Int
+  status      String   @default("PENDING")
+  mpesaCode   String?
+  checkoutId  String?
+  createdAt   DateTime @default(now())
+
+  customer    Customer? @relation(fields: [customerId], references: [id])
+}
+model InternetPackage {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  price       Int
+  durationMin Int
+  speedLimit  String   @default("2M/2M")
+  isFreeTrial Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model AppSetting {
+  id             String   @id @default("main")
+  portalName     String   @default("CRAFT WIFI")
+  subtitle       String   @default("Fast internet for Manguo Estate")
+  portalUrl      String?
+  supportPhone   String?
+  whatsappPhone  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+model SmsLog {
+  id        String   @id @default(cuid())
+  phone     String
+  message   String
+  status    String   @default("PENDING")
+  response  String?
+  error     String?
+  createdAt DateTime @default(now())
+}

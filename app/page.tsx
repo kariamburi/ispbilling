@@ -1,65 +1,96 @@
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+type Props = {
+  searchParams: Promise<{
+    error?: string;
+    mac?: string;
+  }>;
+};
+
+export default async function HomePage({ searchParams }: Props) {
+  const params = await searchParams;
+  const settings = await prisma.appSetting.findUnique({
+    where: { id: "main" },
+  });
+  const packages = await prisma.internetPackage.findMany({
+    where: { active: true },
+    orderBy: { price: "asc" },
+  });
+
+  const errorMessage =
+    params.error === "free_trial_used"
+      ? "This phone number has already used the free trial."
+      : params.error === "free_trial_device_used"
+        ? "This device has already used the free trial."
+        : params.error === "customer_blocked"
+          ? "Your account has been blocked. Please contact support."
+          : null;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+      <div className="mx-auto max-w-md">
+        <div className="mb-6 rounded-3xl bg-emerald-500 p-6 text-center text-slate-950">
+          <h1 className="text-3xl font-black">
+            {settings?.portalName || "CRAFT WIFI"}
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-2 text-sm font-medium">
+            {settings?.subtitle || "Fast internet for Manguo Estate"}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {errorMessage && (
+          <div className="mb-4 rounded-2xl bg-red-100 p-4 text-sm font-bold text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
+        <h2 className="mb-4 text-xl font-bold">Choose Package</h2>
+
+        <div className="space-y-3">
+          {packages.map((pkg) => (
+            <a
+              key={pkg.id}
+              href={`/pay?packageId=${pkg.id}${params.mac ? `&mac=${params.mac}` : ""}`}
+              className="block rounded-2xl bg-white p-5 text-slate-950 shadow"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">{pkg.name}</h3>
+                  <p className="text-sm text-slate-500">
+                    Speed: {pkg.speedLimit}
+                  </p>
+                  {pkg.isFreeTrial && (
+                    <p className="mt-1 text-xs font-bold text-emerald-700">
+                      One-time free trial
+                    </p>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <p className="text-2xl font-black">
+                    {pkg.price === 0 ? "FREE" : `KES ${pkg.price}`}
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    {pkg.price === 0 ? "Start trial" : "Buy now"}
+                  </p>
+                </div>
+              </div>
+            </a>
+          ))}
         </div>
-      </main>
-    </div>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          Powered by Craft Inventors
+        </p>
+        {settings?.whatsappPhone && (
+          <a
+            href={`https://wa.me/${settings.whatsappPhone.replace(/\D/g, "")}`}
+            className="mt-5 block rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950"
+          >
+            Need help? Chat on WhatsApp
+          </a>
+        )}
+      </div>
+    </main>
   );
 }
