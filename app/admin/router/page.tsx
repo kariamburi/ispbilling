@@ -1,21 +1,41 @@
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import SaveButton from "./SaveButton";
+import TestRouterButton from "./TestRouterButton";
+
 
 async function updateRouter(formData: FormData) {
     "use server";
 
-    const id = String(formData.get("id"));
-    const name = String(formData.get("name"));
-    const host = String(formData.get("host"));
-    const username = String(formData.get("username"));
-    const password = String(formData.get("password"));
-    const port = Number(formData.get("port"));
-    const location = String(formData.get("location"));
+    const id = String(formData.get("id") || "");
+    const name = String(formData.get("name") || "");
+    const host = String(formData.get("host") || "");
+    const username = String(formData.get("username") || "");
+    const password = String(formData.get("password") || "");
+    const port = Number(formData.get("port") || 8728);
+    const location = String(formData.get("location") || "");
     const active = formData.get("active") === "on";
+
+    if (!id) {
+        throw new Error("Router ID is missing");
+    }
 
     await prisma.router.update({
         where: { id },
-        data: { name, host, username, password, port, location, active },
+        data: {
+            name,
+            host,
+            username,
+            password,
+            port,
+            location,
+            active,
+        },
     });
+
+    revalidatePath("/admin/router");
+    revalidatePath("/admin/router/monitor");
+    revalidatePath("/admin/deployment");
 }
 
 export default async function AdminRouterPage() {
@@ -24,7 +44,13 @@ export default async function AdminRouterPage() {
     });
 
     if (!router) {
-        return <div className="p-6">No router configured.</div>;
+        return (
+            <main className="p-6">
+                <div className="mx-auto max-w-3xl rounded-3xl bg-white p-6 shadow">
+                    No router configured.
+                </div>
+            </main>
+        );
     }
 
     return (
@@ -33,6 +59,11 @@ export default async function AdminRouterPage() {
                 <div className="mb-6 rounded-3xl bg-slate-950 p-6 text-white">
                     <h1 className="text-3xl font-black">Router Settings</h1>
                     <p className="mt-1 text-slate-300">MikroTik connection details</p>
+                </div>
+
+                <div className="mb-4 rounded-3xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                    For VPS connection through WireGuard, use Host/IP:
+                    <span className="ml-1 font-black">10.10.10.2</span>
                 </div>
 
                 <form action={updateRouter} className="rounded-3xl bg-white p-6 shadow">
@@ -51,6 +82,7 @@ export default async function AdminRouterPage() {
                             <input
                                 name={name}
                                 defaultValue={value}
+                                type={name === "password" ? "password" : "text"}
                                 className="mt-2 w-full rounded-2xl border px-4 py-3"
                             />
                         </div>
@@ -61,14 +93,12 @@ export default async function AdminRouterPage() {
                         Active Router
                     </label>
 
-                    <button className="rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950">
-                        Save Router
-                    </button>
-                </form>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <SaveButton />
+                    </div>
 
-                <a href="/admin" className="mt-5 block text-sm font-bold underline">
-                    Back to Dashboard
-                </a>
+                    <TestRouterButton />
+                </form>
             </div>
         </main>
     );

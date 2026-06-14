@@ -15,9 +15,7 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
-        return Response.redirect(
-            new URL("/login", req.url)
-        );
+        return redirect("/login");
     }
 
     const valid = await bcrypt.compare(
@@ -26,9 +24,8 @@ export async function POST(req: Request) {
     );
 
     if (!valid) {
-        return Response.redirect(
-            new URL("/login", req.url)
-        );
+
+        return redirect("/login");
     }
 
     const token = await createToken({
