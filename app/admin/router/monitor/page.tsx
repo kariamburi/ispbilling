@@ -1,7 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { RouterOSClient } from "routeros-client";
 
-async function getRouterStats() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type MonitorData = {
+    router: any;
+    connected: boolean;
+    error: string | null;
+    identity: any;
+    resource: any;
+    hotspotUsers: any[];
+    activeHotspotUsers: any[];
+};
+
+async function getRouterStats(): Promise<MonitorData> {
     const router = await prisma.router.findFirst({
         where: { active: true },
         orderBy: { createdAt: "desc" },
@@ -19,38 +32,59 @@ async function getRouterStats() {
         };
     }
 
-    const client = new RouterOSClient({
-        host: router.host,
-        user: router.username,
-        password: router.password,
-        port: router.port,
-        timeout: 10,
-    });
+    let client: RouterOSClient | null = null;
 
     try {
+        client = new RouterOSClient({
+            host: router.host,
+            user: router.username,
+            password: router.password,
+            port: router.port,
+            timeout: 30000,
+        });
+
         const api = await client.connect();
 
-        const identity = await api.menu("/system/identity").get();
-        const resource = await api.menu("/system/resource").get();
+        let identity: any = null;
+        let resource: any = null;
+        let hotspotUsers: any[] = [];
+        let activeHotspotUsers: any[] = [];
 
-        const hotspotUsers = await api.menu("/ip/hotspot/user").getAll();
-        const activeHotspotUsers = await api.menu("/ip/hotspot/active").getAll();
+        try {
+            identity = await api.menu("/system/identity").get();
+        } catch (error) {
+            console.error("Monitor identity failed:", error);
+        }
 
-        client.close();
+        try {
+            resource = await api.menu("/system/resource").get();
+        } catch (error) {
+            console.error("Monitor resource failed:", error);
+        }
+
+        try {
+            hotspotUsers = await api.menu("/ip/hotspot/user").getAll();
+        } catch (error) {
+            console.error("Monitor hotspot users failed:", error);
+        }
+
+        try {
+            activeHotspotUsers = await api.menu("/ip/hotspot/active").getAll();
+        } catch (error) {
+            console.error("Monitor active users failed:", error);
+        }
 
         return {
             router,
-            connected: true,
-            error: null,
+            connected: Boolean(identity),
+            error: identity ? null : "Connected to router, but failed to read identity",
             identity,
             resource,
             hotspotUsers,
             activeHotspotUsers,
         };
     } catch (error: any) {
-        try {
-            client.close();
-        } catch { }
+        console.error("Router monitor error:", error);
 
         return {
             router,
@@ -61,6 +95,10 @@ async function getRouterStats() {
             hotspotUsers: [],
             activeHotspotUsers: [],
         };
+    } finally {
+        try {
+            client?.close();
+        } catch { }
     }
 }
 
@@ -116,7 +154,7 @@ export default async function RouterMonitorPage() {
                     <div className="rounded-3xl bg-white p-6 shadow">
                         <p className="text-sm font-bold text-slate-500">Identity</p>
                         <p className="mt-3 text-2xl font-black">
-                            {(data.identity as any)?.name || "-"}
+                            {data.identity?.name || "-"}
                         </p>
                     </div>
                 </div>
@@ -125,14 +163,14 @@ export default async function RouterMonitorPage() {
                     <div className="rounded-3xl bg-white p-6 shadow">
                         <p className="text-sm font-bold text-slate-500">Uptime</p>
                         <p className="mt-3 text-xl font-black">
-                            {(data.resource as any)?.uptime || "-"}
+                            {data.resource?.uptime || "-"}
                         </p>
                     </div>
 
                     <div className="rounded-3xl bg-white p-6 shadow">
                         <p className="text-sm font-bold text-slate-500">CPU Load</p>
                         <p className="mt-3 text-xl font-black">
-                            {(data.resource as any)?.["cpu-load"] ?? "-"}%
+                            {data.resource?.["cpu-load"] ?? "-"}%
                         </p>
                     </div>
 
@@ -168,7 +206,7 @@ export default async function RouterMonitorPage() {
 
                         <tbody>
                             {data.activeHotspotUsers.map((user: any) => (
-                                <tr key={user[".id"]} className="border-t">
+                                <tr key={user[".id"] || user.user} className="border-t">
                                     <td className="p-4 font-bold">{user.user || "-"}</td>
                                     <td className="p-4">{user.address || "-"}</td>
                                     <td className="p-4">{user["mac-address"] || "-"}</td>
