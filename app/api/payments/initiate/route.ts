@@ -4,6 +4,13 @@ import { sendStkPush } from "@/lib/mpesa";
 import { createHotspotUser } from "@/lib/mikrotik";
 import { sendSms } from "@/lib/sms";
 
+const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || "https://billing.craftinventors.co.ke";
+
+function appRedirect(path: string) {
+    return NextResponse.redirect(new URL(path, APP_URL), 303);
+}
+
 function normalizePhone(phone: string) {
     let value = phone.trim().replace(/\s+/g, "");
 
@@ -42,8 +49,8 @@ export async function POST(req: Request) {
         });
 
         const portalName = settings?.portalName || "CRAFT WIFI";
-        const portalUrl =
-            settings?.portalUrl || "https://billing.craftinventors.co.ke";
+        const portalUrl = settings?.portalUrl || APP_URL;
+
         const internetPackage = await prisma.internetPackage.findUnique({
             where: { id: packageId },
         });
@@ -63,18 +70,14 @@ export async function POST(req: Request) {
                 mac: mac || null,
             },
         });
+
         if (customer.blocked) {
-            return NextResponse.redirect(
-                new URL("/?error=customer_blocked", req.url),
-                303
-            );
+            return appRedirect("/?error=customer_blocked");
         }
+
         if (internetPackage.isFreeTrial) {
             if (customer.freeTrialUsed) {
-                return NextResponse.redirect(
-                    new URL("/?error=free_trial_used", req.url),
-                    303
-                );
+                return appRedirect("/?error=free_trial_used");
             }
 
             if (mac) {
@@ -86,10 +89,7 @@ export async function POST(req: Request) {
                 });
 
                 if (macUsed) {
-                    return NextResponse.redirect(
-                        new URL("/?error=free_trial_device_used", req.url),
-                        303
-                    );
+                    return appRedirect("/?error=free_trial_device_used");
                 }
             }
 
@@ -158,10 +158,7 @@ export async function POST(req: Request) {
                 console.error("SMS failed:", smsError);
             }
 
-            return NextResponse.redirect(
-                new URL(`/trial/${session.id}`, req.url),
-                303
-            );
+            return appRedirect(`/trial/${session.id}`);
         }
 
         const payment = await prisma.payment.create({
@@ -188,10 +185,7 @@ export async function POST(req: Request) {
             },
         });
 
-        return NextResponse.redirect(
-            new URL(`/payment/${payment.id}?stk=sent`, req.url),
-            303
-        );
+        return appRedirect(`/payment/${payment.id}?stk=sent`);
     } catch (error: any) {
         console.error("Payment initiate error:", error);
 

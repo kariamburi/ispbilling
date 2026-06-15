@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { RouterOSClient } from "routeros-client";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
+    let client: RouterOSClient | null = null;
+
     try {
         const router = await prisma.router.findFirst({
             where: { active: true },
@@ -16,27 +20,30 @@ export async function GET() {
             );
         }
 
-        const client = new RouterOSClient({
+        client = new RouterOSClient({
             host: router.host,
             user: router.username,
             password: router.password,
             port: router.port,
-            timeout: 10,
+            timeout: 30000,
         });
 
         const api = await client.connect();
 
-        try {
-            const identity = await api.menu("/system/identity").get();
+        const identity = await api.menu("/system/identity").get();
+        const resource = await api.menu("/system/resource").get();
 
-            return NextResponse.json({
-                ok: true,
-                message: "Connected to MikroTik successfully",
-                router: identity,
-            });
-        } finally {
-            client.close();
-        }
+        return NextResponse.json({
+            ok: true,
+            message: "Connected to MikroTik successfully",
+            router: {
+                name: router.name,
+                host: router.host,
+                port: router.port,
+                identity,
+                resource,
+            },
+        });
     } catch (error: any) {
         console.error("Router test error:", error);
 
@@ -47,5 +54,9 @@ export async function GET() {
             },
             { status: 500 }
         );
+    } finally {
+        try {
+            client?.close();
+        } catch { }
     }
 }
