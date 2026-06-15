@@ -14,27 +14,40 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData();
         const rawPhone = String(formData.get("phone") || "");
+        const mac = String(formData.get("mac") || "");
 
-        if (!rawPhone) {
+        if (!rawPhone && !mac) {
             return NextResponse.json(
-                { ok: false, error: "Phone number is required" },
+                { ok: false, error: "Phone or MAC is required" },
                 { status: 400 }
             );
         }
 
-        const phone = normalizePhone(rawPhone);
+        const phone = rawPhone ? normalizePhone(rawPhone) : "";
 
-        const customer = await prisma.customer.update({
-            where: { phone },
-            data: {
-                freeTrialUsed: false,
-                freeTrialUsedAt: null,
-            },
-        });
+        if (phone) {
+            await prisma.customer.updateMany({
+                where: { phone },
+                data: {
+                    freeTrialUsed: false,
+                    freeTrialUsedAt: null,
+                },
+            });
+        }
+
+        if (mac) {
+            await prisma.customer.updateMany({
+                where: { mac },
+                data: {
+                    freeTrialUsed: false,
+                    freeTrialUsedAt: null,
+                },
+            });
+        }
 
         return NextResponse.json({
             ok: true,
-            message: `Free trial reset for ${customer.phone}`,
+            message: "Free trial reset successfully",
         });
     } catch (error: any) {
         return NextResponse.json(
