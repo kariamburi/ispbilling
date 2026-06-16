@@ -76,22 +76,22 @@ export async function POST(req: Request) {
         }
 
         if (internetPackage.isFreeTrial) {
-            if (customer.freeTrialUsed) {
-                return appRedirect("/?error=free_trial_used");
-            }
+            // if (customer.freeTrialUsed) {
+            //     return appRedirect("/?error=free_trial_used");
+            // }
 
-            if (mac) {
-                const macUsed = await prisma.customer.findFirst({
-                    where: {
-                        mac,
-                        freeTrialUsed: true,
-                    },
-                });
+            // if (mac) {
+            //    const macUsed = await prisma.customer.findFirst({
+            //       where: {
+            //           mac,
+            //           freeTrialUsed: true,
+            //      },
+            //  });
 
-                if (macUsed) {
-                    return appRedirect("/?error=free_trial_device_used");
-                }
-            }
+            //  if (macUsed) {
+            //     return appRedirect("/?error=free_trial_device_used");
+            // }
+            //  }
 
             const username = phone;
             const password = String(Math.floor(1000 + Math.random() * 9000));
