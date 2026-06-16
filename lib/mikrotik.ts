@@ -72,13 +72,17 @@ export async function createHotspotUser({
 
         console.log("STEP 5: limit uptime", limitUptime);
 
-        const activeUsers = await api.menu("/ip/hotspot/active").getAll();
+        console.log("STEP 6: adding hotspot user");
 
-        console.log("STEP 6: active users loaded", activeUsers.length);
+        await api.menu("/ip/hotspot/user").add({
+            name: username,
+            password,
+            "limit-uptime": limitUptime,
+            disabled: "no",
+            comment: "Craft Billing Test",
+        });
 
-        const existingUsers = await api.menu("/ip/hotspot/user").getAll();
-
-        console.log("STEP 7: hotspot users loaded", existingUsers.length);
+        console.log("STEP 7: hotspot user added");
 
         return {
             ok: true,
