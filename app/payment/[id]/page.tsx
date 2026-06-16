@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Props = {
     params: Promise<{ id: string }>;
 };
@@ -14,15 +17,17 @@ export default async function PaymentStatusPage({ params }: Props) {
 
     if (!payment) notFound();
 
-    const session = payment.customerId
-        ? await prisma.internetSession.findFirst({
-            where: {
-                customerId: payment.customerId,
-                active: true,
-            },
-            orderBy: { createdAt: "desc" },
-        })
-        : null;
+    const session =
+        payment.customerId && payment.packageId
+            ? await prisma.internetSession.findFirst({
+                where: {
+                    customerId: payment.customerId,
+                    packageId: payment.packageId,
+                    active: true,
+                },
+                orderBy: { createdAt: "desc" },
+            })
+            : null;
 
     const settings = await prisma.appSetting.findUnique({
         where: { id: "main" },
@@ -38,6 +43,10 @@ export default async function PaymentStatusPage({ params }: Props) {
         <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
             {!isPaid && !isFailed && <meta httpEquiv="refresh" content="5" />}
 
+            {isPaid && !canAutoLogin && !isFailed && (
+                <meta httpEquiv="refresh" content="3" />
+            )}
+
             {canAutoLogin && (
                 <meta
                     httpEquiv="refresh"
@@ -50,11 +59,13 @@ export default async function PaymentStatusPage({ params }: Props) {
                     <h1 className="text-2xl font-black">{portalName}</h1>
 
                     <p className="mt-1 text-sm text-slate-500">
-                        {isPaid
-                            ? "Internet access ready"
-                            : isFailed
-                                ? "Payment failed"
-                                : "Waiting for M-Pesa payment"}
+                        {canAutoLogin
+                            ? "Connecting you to internet..."
+                            : isPaid
+                                ? "Payment received, activating internet..."
+                                : isFailed
+                                    ? "Payment failed"
+                                    : "Waiting for M-Pesa payment"}
                     </p>
 
                     <div className="mt-5 rounded-2xl bg-slate-100 p-4">
@@ -105,9 +116,9 @@ export default async function PaymentStatusPage({ params }: Props) {
 
                     <p className="mt-5 text-sm text-slate-500">
                         {canAutoLogin
-                            ? "Connecting you automatically..."
+                            ? "Please wait. You will be connected automatically."
                             : isPaid
-                                ? `Connect to ${portalName}, then login using the details above.`
+                                ? "Payment received. We are activating your internet access."
                                 : isFailed
                                     ? "Payment was not completed. Please try again."
                                     : "Check your phone and enter M-Pesa PIN. This page refreshes automatically."}
@@ -118,7 +129,7 @@ export default async function PaymentStatusPage({ params }: Props) {
                             href={`/auto-login?sessionId=${session.id}`}
                             className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
                         >
-                            Connect to Internet
+                            Connect Now
                         </a>
                     ) : (
                         <a
