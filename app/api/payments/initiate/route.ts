@@ -93,7 +93,7 @@ export async function POST(req: Request) {
                 }
             }
 
-            const username = phone;
+            const username = `${phone}-${Date.now().toString().slice(-5)}`;
             const password = String(Math.floor(1000 + Math.random() * 9000));
             const expiresAt = new Date(
                 Date.now() + internetPackage.durationMin * 60 * 1000

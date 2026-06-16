@@ -66,7 +66,7 @@ export async function POST(req: Request) {
                 });
 
                 if (pkg) {
-                    const username = paidPayment.phone;
+                    const username = `${paidPayment.phone}-${Date.now().toString().slice(-5)}`;
                     const password = String(Math.floor(1000 + Math.random() * 9000));
                     const expiresAt = new Date(Date.now() + pkg.durationMin * 60 * 1000);
 
