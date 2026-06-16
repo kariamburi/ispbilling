@@ -147,16 +147,16 @@ export async function POST(req: Request) {
                 });
             }
 
-            // try {
-            //  await sendSms({
-            //     to: phone,
-            //     message: `${portalName} free trial is active. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
-            //        expiresAt
-            //    )}. Connect to ${portalName}. Portal: ${portalUrl}`,
-            //});
-            // } catch (smsError) {
-            //     console.error("SMS failed:", smsError);
-            // }
+            try {
+                await sendSms({
+                    to: phone,
+                    message: `${portalName} free trial is active. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
+                        expiresAt
+                    )}. Connect to ${portalName}. Portal: ${portalUrl}`,
+                });
+            } catch (smsError) {
+                console.error("SMS failed:", smsError);
+            }
 
             return appRedirect(`/trial/${session.id}`);
         }
