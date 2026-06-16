@@ -45,13 +45,9 @@ export async function createHotspotUser({
     username,
     password,
     durationMinutes,
+    speedLimit,
 }: CreateHotspotUserArgs) {
-
-    console.log("STEP 1: getActiveRouter");
-
     const router = await getActiveRouter();
-
-    console.log("STEP 2: router found", router.host);
 
     const client = new RouterOSClient({
         host: router.host,
@@ -61,35 +57,42 @@ export async function createHotspotUser({
         timeout: 10000,
     });
 
-    console.log("STEP 3: connecting");
-
     const api = await client.connect();
-
-    console.log("STEP 4: connected");
 
     try {
         const limitUptime = minutesToLimitUptime(durationMinutes);
+        const profile = speedLimit || "default";
 
-        console.log("STEP 5: limit uptime", limitUptime);
+        try {
+            await api.menu("/ip/hotspot/user").add({
+                name: username,
+                password,
+                profile,
+                "limit-uptime": limitUptime,
+                disabled: "no",
+                comment: "Created by Craft Billing",
+            });
+        } catch (error: any) {
+            const message = String(error?.message || "").toLowerCase();
 
-        console.log("STEP 6: adding hotspot user");
+            if (message.includes("already have user")) {
+                throw new Error(
+                    `Hotspot user ${username} already exists. Remove it from MikroTik before retrying.`
+                );
+            }
 
-        await api.menu("/ip/hotspot/user").add({
-            name: username,
-            password,
-            "limit-uptime": limitUptime,
-            disabled: "no",
-            comment: "Craft Billing Test",
-        });
-
-        console.log("STEP 7: hotspot user added");
+            throw error;
+        }
 
         return {
             ok: true,
             username,
             limitUptime,
+            profile,
         };
     } finally {
-        client.close();
+        try {
+            client.close();
+        } catch { }
     }
 }
