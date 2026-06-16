@@ -53,7 +53,7 @@ export async function createHotspotUser({
         user: router.username,
         password: router.password,
         port: router.port,
-        timeout: 30000,
+        timeout: 10000,
     });
 
     const api = await client.connect();
@@ -61,21 +61,30 @@ export async function createHotspotUser({
     try {
         const limitUptime = minutesToLimitUptime(durationMinutes);
 
-        const activeUsers = await api.menu("/ip/hotspot/active").getAll();
-        const active = activeUsers.find((user: any) => user.user === username);
+        const activeUsers = await api
+            .menu("/ip/hotspot/active")
+            .where("user", username)
+            .get();
 
-        if (active?.[".id"]) {
-            await api.menu("/ip/hotspot/active").remove([active[".id"]]);
+        for (const active of activeUsers) {
+            if (active?.[".id"]) {
+                await api.menu("/ip/hotspot/active").remove(active[".id"]);
+            }
         }
 
-        const existingUsers = await api.menu("/ip/hotspot/user").getAll();
-        const existing = existingUsers.find((user: any) => user.name === username);
+        const existingUsers = await api
+            .menu("/ip/hotspot/user")
+            .where("name", username)
+            .get();
+
+        const existing = existingUsers[0];
 
         if (existing?.[".id"]) {
             await api.menu("/ip/hotspot/user").update({
                 ".id": existing[".id"],
                 password,
                 "limit-uptime": limitUptime,
+                disabled: "no",
                 comment: "Updated by Craft Billing",
             });
         } else {
@@ -83,6 +92,7 @@ export async function createHotspotUser({
                 name: username,
                 password,
                 "limit-uptime": limitUptime,
+                disabled: "no",
                 comment: "Created by Craft Billing",
             });
         }

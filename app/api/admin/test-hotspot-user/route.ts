@@ -5,7 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
     try {
+        console.log("TEST_HOTSPOT_USER: request received");
+
         const body = await req.json();
+
+        console.log("TEST_HOTSPOT_USER: body", body);
 
         const username = String(body.username || "");
         const password = String(body.password || "1234");
@@ -19,12 +23,16 @@ export async function POST(req: Request) {
             );
         }
 
+        console.log("TEST_HOTSPOT_USER: calling createHotspotUser");
+
         const result = await createHotspotUser({
             username,
             password,
             durationMinutes,
             speedLimit,
         });
+
+        console.log("TEST_HOTSPOT_USER: success", result);
 
         return NextResponse.json({
             ok: true,
