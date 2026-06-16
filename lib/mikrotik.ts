@@ -96,3 +96,30 @@ export async function createHotspotUser({
         } catch { }
     }
 }
+export async function removeHotspotUser(username: string) {
+    const router = await getActiveRouter();
+
+    const client = new RouterOSClient({
+        host: router.host,
+        user: router.username,
+        password: router.password,
+        port: router.port,
+        timeout: 10000,
+    });
+
+    const api = await client.connect();
+
+    try {
+        try {
+            await api.menu("/ip/hotspot/user").remove(username);
+        } catch (error) {
+            console.error("Remove hotspot user failed:", error);
+        }
+
+        return true;
+    } finally {
+        try {
+            client.close();
+        } catch { }
+    }
+}
