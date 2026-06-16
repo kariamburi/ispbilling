@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
                     try {
                         await sendSms({
-                            to: username,
+                            to: paidPayment.phone,
                             message: `${portalName} payment received. Package: ${pkg.name
                                 }. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
                                     expiresAt
