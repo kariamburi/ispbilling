@@ -158,7 +158,7 @@ export async function POST(req: Request) {
                 console.error("SMS failed:", smsError);
             }
 
-            return appRedirect(`/trial/${session.id}`);
+            return appRedirect(`/auto-login?sessionId=${session.id}`);
         }
 
         const payment = await prisma.payment.create({

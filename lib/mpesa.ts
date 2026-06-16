@@ -18,7 +18,7 @@ export async function getMpesaAccessToken() {
     const auth = Buffer.from(`${key}:${secret}`).toString("base64");
 
     const res = await fetch(
-        "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+        "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
         {
             headers: {
                 Authorization: `Basic ${auth}`,
@@ -58,7 +58,7 @@ export async function sendStkPush({
     );
 
     const res = await fetch(
-        "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+        "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
         {
             method: "POST",
             headers: {

@@ -32,10 +32,18 @@ export default async function PaymentStatusPage({ params }: Props) {
 
     const isPaid = payment.status === "PAID";
     const isFailed = payment.status === "FAILED";
+    const canAutoLogin = isPaid && session?.activationStatus === "ACTIVATED";
 
     return (
         <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
             {!isPaid && !isFailed && <meta httpEquiv="refresh" content="5" />}
+
+            {canAutoLogin && (
+                <meta
+                    httpEquiv="refresh"
+                    content={`2;url=/auto-login?sessionId=${session.id}`}
+                />
+            )}
 
             <div className="mx-auto max-w-md">
                 <div className="rounded-3xl bg-white p-6 text-center text-slate-950">
@@ -96,19 +104,30 @@ export default async function PaymentStatusPage({ params }: Props) {
                     )}
 
                     <p className="mt-5 text-sm text-slate-500">
-                        {isPaid
-                            ? `Connect to ${portalName}, then login using the details above.`
-                            : isFailed
-                                ? "Payment was not completed. Please try again."
-                                : "Check your phone and enter M-Pesa PIN. This page refreshes automatically."}
+                        {canAutoLogin
+                            ? "Connecting you automatically..."
+                            : isPaid
+                                ? `Connect to ${portalName}, then login using the details above.`
+                                : isFailed
+                                    ? "Payment was not completed. Please try again."
+                                    : "Check your phone and enter M-Pesa PIN. This page refreshes automatically."}
                     </p>
 
-                    <a
-                        href="/"
-                        className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
-                    >
-                        {isPaid ? "Buy More Time" : "Back to packages"}
-                    </a>
+                    {canAutoLogin ? (
+                        <a
+                            href={`/auto-login?sessionId=${session.id}`}
+                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
+                        >
+                            Connect to Internet
+                        </a>
+                    ) : (
+                        <a
+                            href="/"
+                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
+                        >
+                            {isPaid ? "Buy More Time" : "Back to packages"}
+                        </a>
+                    )}
                 </div>
             </div>
         </main>
