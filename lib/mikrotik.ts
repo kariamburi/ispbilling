@@ -46,7 +46,12 @@ export async function createHotspotUser({
     password,
     durationMinutes,
 }: CreateHotspotUserArgs) {
+
+    console.log("STEP 1: getActiveRouter");
+
     const router = await getActiveRouter();
+
+    console.log("STEP 2: router found", router.host);
 
     const client = new RouterOSClient({
         host: router.host,
@@ -56,46 +61,24 @@ export async function createHotspotUser({
         timeout: 10000,
     });
 
+    console.log("STEP 3: connecting");
+
     const api = await client.connect();
+
+    console.log("STEP 4: connected");
 
     try {
         const limitUptime = minutesToLimitUptime(durationMinutes);
 
-        const activeUsers = await api
-            .menu("/ip/hotspot/active")
-            .where("user", username)
-            .get();
+        console.log("STEP 5: limit uptime", limitUptime);
 
-        for (const active of activeUsers) {
-            if (active?.[".id"]) {
-                await api.menu("/ip/hotspot/active").remove(active[".id"]);
-            }
-        }
+        const activeUsers = await api.menu("/ip/hotspot/active").getAll();
 
-        const existingUsers = await api
-            .menu("/ip/hotspot/user")
-            .where("name", username)
-            .get();
+        console.log("STEP 6: active users loaded", activeUsers.length);
 
-        const existing = existingUsers[0];
+        const existingUsers = await api.menu("/ip/hotspot/user").getAll();
 
-        if (existing?.[".id"]) {
-            await api.menu("/ip/hotspot/user").update({
-                ".id": existing[".id"],
-                password,
-                "limit-uptime": limitUptime,
-                disabled: "no",
-                comment: "Updated by Craft Billing",
-            });
-        } else {
-            await api.menu("/ip/hotspot/user").add({
-                name: username,
-                password,
-                "limit-uptime": limitUptime,
-                disabled: "no",
-                comment: "Created by Craft Billing",
-            });
-        }
+        console.log("STEP 7: hotspot users loaded", existingUsers.length);
 
         return {
             ok: true,
@@ -103,8 +86,6 @@ export async function createHotspotUser({
             limitUptime,
         };
     } finally {
-        try {
-            client.close();
-        } catch { }
+        client.close();
     }
 }
