@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import SubmitSettingsButton from "./SubmitSettingsButton";
 
 async function updateSettings(formData: FormData) {
     "use server";
@@ -38,7 +39,6 @@ export default async function SettingsPage() {
             supportPhone: "+254728820092",
             whatsappPhone: "+254728820092",
             portalUrl: "https://billing.craftinventors.co.ke",
-
         },
     });
 
@@ -78,6 +78,7 @@ export default async function SettingsPage() {
                         defaultValue={settings.whatsappPhone || ""}
                         className="mt-2 w-full rounded-2xl border px-4 py-3"
                     />
+
                     <label className="mt-5 block text-sm font-bold">Portal URL</label>
                     <input
                         name="portalUrl"
@@ -85,9 +86,8 @@ export default async function SettingsPage() {
                         placeholder="https://billing.craftinventors.co.ke"
                         className="mt-2 w-full rounded-2xl border px-4 py-3"
                     />
-                    <button className="mt-5 cursor-pointer rounded-2xl bg-emerald-500 px-5 py-3 font-black text-slate-950">
-                        Save Settings
-                    </button>
+
+                    <SubmitSettingsButton />
                 </form>
 
                 <a href="/admin" className="mt-5 block text-sm font-bold underline">

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import LoadingLinkButton from "../../LoadingLinkButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -40,7 +41,7 @@ export default async function PaymentStatusPage({ params }: Props) {
     const canAutoLogin = isPaid && session?.activationStatus === "ACTIVATED";
 
     return (
-        <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+        <main className="min-h-screen bg-[#061b13] text-white">
             {!isPaid && !isFailed && <meta httpEquiv="refresh" content="5" />}
 
             {isPaid && !canAutoLogin && !isFailed && (
@@ -54,92 +55,185 @@ export default async function PaymentStatusPage({ params }: Props) {
                 />
             )}
 
-            <div className="mx-auto max-w-md">
-                <div className="rounded-3xl bg-white p-6 text-center text-slate-950">
-                    <h1 className="text-2xl font-black">{portalName}</h1>
+            <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
+                <header className="mb-6 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-emerald-300">
+                            Payment Status
+                        </p>
+                        <h1 className="mt-1 text-2xl font-black">{portalName}</h1>
+                    </div>
 
-                    <p className="mt-1 text-sm text-slate-500">
+                    <div className="rounded-full border border-emerald-400/30 bg-white/10 px-4 py-2 text-xs font-bold text-emerald-200">
+                        Live
+                    </div>
+                </header>
+
+                <section className="mb-6 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-emerald-400 via-emerald-500 to-lime-400 p-6 text-slate-950 shadow-2xl">
+                    <p className="text-sm font-black uppercase tracking-wide">
                         {canAutoLogin
-                            ? "Connecting you to internet..."
+                            ? "Ready to Connect"
                             : isPaid
-                                ? "Payment received, activating internet..."
+                                ? "Payment Received"
                                 : isFailed
-                                    ? "Payment failed"
-                                    : "Waiting for M-Pesa payment"}
+                                    ? "Payment Failed"
+                                    : "Awaiting Payment"}
                     </p>
 
-                    <div className="mt-5 rounded-2xl bg-slate-100 p-4">
-                        <p className="text-sm text-slate-500">Phone</p>
-                        <p className="font-bold">{payment.phone}</p>
+                    <h2 className="mt-3 text-3xl font-black leading-tight">
+                        {canAutoLogin
+                            ? "Your internet is ready."
+                            : isPaid
+                                ? "Activating your internet."
+                                : isFailed
+                                    ? "Payment was not completed."
+                                    : "Complete M-Pesa payment."}
+                    </h2>
 
-                        <p className="mt-3 text-sm text-slate-500">Amount</p>
-                        <p className="text-3xl font-black">KES {payment.amount}</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-800">
+                        {canAutoLogin
+                            ? "You will be connected automatically shortly."
+                            : isPaid
+                                ? "Please wait while we activate your session."
+                                : isFailed
+                                    ? "You can go back and try again."
+                                    : "Check your phone and enter your M-Pesa PIN."}
+                    </p>
+                </section>
 
-                        <p className="mt-3 text-sm text-slate-500">Status</p>
-                        <p className="font-black">{payment.status}</p>
+                <section className="rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl">
+                    <div className="flex items-center justify-center">
+                        <div
+                            className={`flex h-20 w-20 items-center justify-center rounded-full ${canAutoLogin || isPaid
+                                ? "bg-emerald-100 text-emerald-700"
+                                : isFailed
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                        >
+                            <span className="text-3xl font-black">
+                                {canAutoLogin || isPaid ? "✓" : isFailed ? "!" : "..."}
+                            </span>
+                        </div>
+                    </div>
 
-                        {payment.mpesaCode && (
-                            <>
-                                <p className="mt-3 text-sm text-slate-500">M-Pesa Code</p>
-                                <p className="font-bold">{payment.mpesaCode}</p>
-                            </>
-                        )}
+                    <div className="mt-5 rounded-3xl bg-slate-50 p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs font-bold text-slate-500">Phone</p>
+                                <p className="mt-1 font-black">{payment.phone}</p>
+                            </div>
+
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-slate-500">Amount</p>
+                                <p className="mt-1 text-xl font-black">KES {payment.amount}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-bold text-slate-500">Status</p>
+                                <p
+                                    className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black ${isPaid
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : isFailed
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-amber-100 text-amber-700"
+                                        }`}
+                                >
+                                    {payment.status}
+                                </p>
+                            </div>
+
+                            {payment.mpesaCode && (
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-slate-500">M-Pesa Code</p>
+                                    <p className="mt-1 font-black">{payment.mpesaCode}</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {isPaid && session && (
-                        <div className="mt-5 rounded-2xl bg-emerald-50 p-4 text-left">
-                            <p className="text-sm font-bold text-emerald-700">
+                        <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
+                            <p className="text-sm font-black text-emerald-700">
                                 Internet Login Details
                             </p>
 
-                            <p className="mt-3 text-sm text-slate-500">Username</p>
-                            <p className="text-xl font-black">{session.username}</p>
+                            <div className="mt-4 grid grid-cols-1 gap-3">
+                                <div className="rounded-2xl bg-white p-3">
+                                    <p className="text-xs font-bold text-slate-500">Username</p>
+                                    <p className="mt-1 text-xl font-black">{session.username}</p>
+                                </div>
 
-                            <p className="mt-3 text-sm text-slate-500">Password</p>
-                            <p className="text-xl font-black">{session.password}</p>
+                                <div className="rounded-2xl bg-white p-3">
+                                    <p className="text-xs font-bold text-slate-500">Password</p>
+                                    <p className="mt-1 text-xl font-black">{session.password}</p>
+                                </div>
 
-                            <p className="mt-3 text-sm text-slate-500">Expires</p>
-                            <p className="font-bold">
-                                {new Date(session.expiresAt).toLocaleString()}
-                            </p>
+                                <div className="rounded-2xl bg-white p-3">
+                                    <p className="text-xs font-bold text-slate-500">Expires</p>
+                                    <p className="mt-1 font-black">
+                                        {new Date(session.expiresAt).toLocaleString()}
+                                    </p>
+                                </div>
 
-                            <p className="mt-3 text-sm text-slate-500">Activation</p>
-                            <p className="font-bold">{session.activationStatus}</p>
+                                <div className="rounded-2xl bg-white p-3">
+                                    <p className="text-xs font-bold text-slate-500">Activation</p>
+                                    <p className="mt-1 font-black">{session.activationStatus}</p>
+                                </div>
+                            </div>
 
                             {session.activationError && (
-                                <p className="mt-3 text-xs font-bold text-red-600">
+                                <p className="mt-3 rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-600">
                                     {session.activationError}
                                 </p>
                             )}
                         </div>
                     )}
 
-                    <p className="mt-5 text-sm text-slate-500">
+                    <p className="mt-5 text-center text-sm font-semibold text-slate-500">
                         {canAutoLogin
                             ? "Please wait. You will be connected automatically."
                             : isPaid
                                 ? "Payment received. We are activating your internet access."
                                 : isFailed
                                     ? "Payment was not completed. Please try again."
-                                    : "Check your phone and enter M-Pesa PIN. This page refreshes automatically."}
+                                    : "This page refreshes automatically after payment."}
                     </p>
 
                     {canAutoLogin ? (
-                        <a
+                        <LoadingLinkButton
                             href={`/auto-login?sessionId=${session.id}`}
-                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
+                            loadingText="Connecting..."
+                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98]"
                         >
                             Connect Now
-                        </a>
+                        </LoadingLinkButton>
                     ) : (
-                        <a
+                        <LoadingLinkButton
                             href="/"
-                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 font-black text-slate-950"
+                            loadingText="Opening packages..."
+                            className="mt-5 block rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98]"
                         >
-                            {isPaid ? "Buy More Time" : "Back to packages"}
-                        </a>
+                            {isPaid ? "Buy More Time" : "Back to Packages"}
+                        </LoadingLinkButton>
                     )}
-                </div>
+                </section>
+
+                <footer className="mt-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400">
+                    <p>© {new Date().getFullYear()} {portalName}</p>
+
+                    <p className="mt-2">
+                        Powered by{" "}
+                        <a
+                            href="https://craftinventors.co.ke"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-black text-emerald-300 underline-offset-4 hover:underline"
+                        >
+                            Craft Inventors
+                        </a>
+                    </p>
+                </footer>
             </div>
         </main>
     );

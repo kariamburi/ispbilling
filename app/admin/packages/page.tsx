@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import SubmitButton from "./SubmitButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -201,9 +202,7 @@ export default async function AdminPackagesPage({ searchParams }: Props) {
                         </div>
                     ))}
 
-                    <button className="sticky bottom-6 w-full cursor-pointer rounded-2xl bg-emerald-500 px-4 py-4 text-base font-black text-slate-950 shadow-lg">
-                        Save All Packages
-                    </button>
+                    <SubmitButton />
                 </form>
 
                 <div className="mt-5 flex gap-3">
