@@ -52,15 +52,15 @@ export default async function HomePage({ searchParams }: Props) {
             </h1>
           </div>
 
-          <a
+          {/**  <a
             href="#login-form"
             className="cursor-pointer rounded-full border border-emerald-400/30 bg-white/10 px-4 py-2 text-xs font-bold text-emerald-200 transition hover:bg-white hover:text-slate-950"
           >
             Secure Login
-          </a>
+          </a>*/}
         </header>
 
-        <section className="mb-6 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-emerald-400 via-emerald-500 to-lime-400 p-6 text-slate-950 shadow-2xl">
+        {/** <section className="mb-6 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-emerald-400 via-emerald-500 to-lime-400 p-6 text-slate-950 shadow-2xl">
           <div className="max-w-xl">
             <p className="text-sm font-black uppercase tracking-wide">
               Fast • Affordable • Reliable
@@ -74,7 +74,7 @@ export default async function HomePage({ searchParams }: Props) {
               {settings?.subtitle || "Fast internet for Manguo Estate"}
             </p>
           </div>
-        </section>
+        </section> */}
 
         {errorMessage && (
           <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
