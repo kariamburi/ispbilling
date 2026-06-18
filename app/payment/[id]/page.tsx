@@ -39,6 +39,7 @@ export default async function PaymentStatusPage({ params }: Props) {
     const isPaid = payment.status === "PAID";
     const isFailed = payment.status === "FAILED";
     const canAutoLogin = isPaid && session?.activationStatus === "ACTIVATED";
+
     const activationPending =
         isPaid && (!session || session.activationStatus === "PENDING");
 
@@ -53,6 +54,37 @@ export default async function PaymentStatusPage({ params }: Props) {
                     httpEquiv="refresh"
                     content={`2;url=/auto-login?sessionId=${session.id}`}
                 />
+            )}
+
+            {activationPending && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 px-6 text-white">
+                    <div className="w-full max-w-sm rounded-[2rem] bg-white p-6 text-center text-slate-950 shadow-2xl">
+                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100">
+                            <span className="animate-pulse text-5xl">📶</span>
+                        </div>
+
+                        <h2 className="mt-5 text-2xl font-black">
+                            Connecting your internet...
+                        </h2>
+
+                        <p className="mt-2 text-sm font-bold text-slate-500">
+                            Payment received. Please wait while we activate your session on
+                            the router.
+                        </p>
+
+                        <div className="mt-5 flex items-center justify-center gap-2">
+                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                            <span className="text-sm font-black text-emerald-700">
+                                Processing activation
+                            </span>
+                        </div>
+
+                        <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-xs font-bold text-amber-700">
+                            Do not go back, refresh, or click another package. Internet will
+                            open automatically.
+                        </p>
+                    </div>
+                </div>
             )}
 
             <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
@@ -173,7 +205,9 @@ export default async function PaymentStatusPage({ params }: Props) {
 
                             {payment.mpesaCode && (
                                 <div className="col-span-2">
-                                    <p className="text-xs font-bold text-slate-500">M-Pesa Code</p>
+                                    <p className="text-xs font-bold text-slate-500">
+                                        M-Pesa Code
+                                    </p>
                                     <p className="mt-1 font-black">{payment.mpesaCode}</p>
                                 </div>
                             )}

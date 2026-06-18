@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import LoadingLinkButton from "../LoadingLinkButton";
+import SubmitPaymentButton from "./SubmitPaymentButton";
 
 type Props = {
   searchParams: Promise<{
@@ -118,12 +119,7 @@ export default async function PayPage({ searchParams }: Props) {
               />
             </div>
 
-            <button
-              type="submit"
-              className="w-full cursor-pointer rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98]"
-            >
-              {pkg.isFreeTrial ? "Start Free Trial" : "Pay with M-Pesa"}
-            </button>
+            <SubmitPaymentButton isFreeTrial={pkg.isFreeTrial} />
           </form>
         </section>
 

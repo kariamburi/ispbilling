@@ -123,3 +123,36 @@ export async function removeHotspotUser(username: string) {
         } catch { }
     }
 }
+export async function cleanupHotspotUser(username: string) {
+    const router = await getActiveRouter();
+
+    const client = new RouterOSClient({
+        host: router.host,
+        user: router.username,
+        password: router.password,
+        port: router.port,
+        timeout: 10000,
+    });
+
+    const api = await client.connect();
+
+    try {
+        try {
+            await api.menu("/ip/hotspot/active").remove(username);
+        } catch { }
+
+        try {
+            await api.menu("/ip/hotspot/cookie").remove(username);
+        } catch { }
+
+        try {
+            await api.menu("/ip/hotspot/user").remove(username);
+        } catch { }
+
+        return true;
+    } finally {
+        try {
+            client.close();
+        } catch { }
+    }
+}
