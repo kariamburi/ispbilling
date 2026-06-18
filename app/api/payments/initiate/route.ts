@@ -142,7 +142,7 @@ export async function POST(req: Request) {
                     where: { id: session.id },
                     data: {
                         activationStatus: "FAILED",
-                        activationError: JSON.stringify(error, Object.getOwnPropertyNames(error)).slice(0, 500),
+                        activationError: error?.message || "MikroTik activation failed",
                     },
                 });
             }
