@@ -3,11 +3,7 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-type Props = {
-    isFreeTrial: boolean;
-};
-
-export default function SubmitPaymentButton({ isFreeTrial }: Props) {
+export default function LoginSubmitButton() {
     const { pending } = useFormStatus();
     const [clicked, setClicked] = useState(false);
     const clickedRef = useRef(false);
@@ -38,16 +34,7 @@ export default function SubmitPaymentButton({ isFreeTrial }: Props) {
                 <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
             )}
 
-            {loading ? (
-                <div className="flex flex-col items-center">
-                    <span>{isFreeTrial ? "Starting trial..." : "Processing payment..."}</span>
-                    <span className="text-[10px] font-bold opacity-70">
-                        Please wait, do not press again
-                    </span>
-                </div>
-            ) : (
-                <span>{isFreeTrial ? "Start Free Trial" : "Pay with M-Pesa"}</span>
-            )}
+            {loading ? "Connecting..." : "Login to Internet"}
         </button>
     );
 }

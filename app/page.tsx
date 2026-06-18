@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import LoadingLinkButton from "./LoadingLinkButton";
+import LoginSubmitButton from "./LoginSubmitButton";
 
 type Props = {
   searchParams: Promise<{
@@ -10,6 +11,7 @@ type Props = {
 
 function displaySpeed(profile: string | null) {
   if (profile === "trial") return "1M/1M";
+  if (profile === "mini") return "1M/1M";
   if (profile === "daily") return "3M/3M";
   if (profile === "weekly") return "5M/5M";
   if (profile === "monthly") return "10M/10M";
@@ -160,12 +162,7 @@ export default async function HomePage({ searchParams }: Props) {
 
             {params.mac && <input type="hidden" name="mac" value={params.mac} />}
 
-            <button
-              type="submit"
-              className="flex w-full cursor-pointer items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-400 active:scale-[0.98]"
-            >
-              Login to Internet
-            </button>
+            <LoginSubmitButton />
           </form>
         </section>
 
