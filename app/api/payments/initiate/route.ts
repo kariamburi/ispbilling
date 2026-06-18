@@ -148,11 +148,13 @@ export async function POST(req: Request) {
             }
 
             try {
+                const loginLink = `${portalUrl}/auto-login?sessionId=${session.id}`;
+
                 await sendSms({
                     to: phone,
-                    message: `${portalName} free trial is active. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
+                    message: `${portalName} free trial is active. Tap to connect: ${loginLink}. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
                         expiresAt
-                    )}. Connect to ${portalName}. Portal: ${portalUrl}`,
+                    )}`,
                 });
             } catch (smsError) {
                 console.error("SMS failed:", smsError);

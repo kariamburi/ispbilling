@@ -112,12 +112,14 @@ export async function POST(req: Request) {
                     }
 
                     try {
+                        const loginLink = `${portalUrl}/auto-login?sessionId=${session.id}`;
+
                         await sendSms({
                             to: paidPayment.phone,
                             message: `${portalName} payment received. Package: ${pkg.name
-                                }. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
+                                }. Tap to connect: ${loginLink}. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
                                     expiresAt
-                                )}. Connect to ${portalName}. Portal: ${portalUrl}`,
+                                )}`,
                         });
                     } catch (smsError) {
                         console.error("SMS failed:", smsError);
