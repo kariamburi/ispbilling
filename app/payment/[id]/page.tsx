@@ -39,14 +39,14 @@ export default async function PaymentStatusPage({ params }: Props) {
     const isPaid = payment.status === "PAID";
     const isFailed = payment.status === "FAILED";
     const canAutoLogin = isPaid && session?.activationStatus === "ACTIVATED";
+    const activationPending =
+        isPaid && (!session || session.activationStatus === "PENDING");
 
     return (
         <main className="min-h-screen bg-[#061b13] text-white">
             {!isPaid && !isFailed && <meta httpEquiv="refresh" content="5" />}
 
-            {isPaid && !canAutoLogin && !isFailed && (
-                <meta httpEquiv="refresh" content="3" />
-            )}
+            {activationPending && <meta httpEquiv="refresh" content="2" />}
 
             {canAutoLogin && (
                 <meta
@@ -73,48 +73,62 @@ export default async function PaymentStatusPage({ params }: Props) {
                     <p className="text-sm font-black uppercase tracking-wide">
                         {canAutoLogin
                             ? "Ready to Connect"
-                            : isPaid
-                                ? "Payment Received"
-                                : isFailed
-                                    ? "Payment Failed"
-                                    : "Awaiting Payment"}
+                            : activationPending
+                                ? "Activating Session"
+                                : isPaid
+                                    ? "Payment Received"
+                                    : isFailed
+                                        ? "Payment Failed"
+                                        : "Awaiting Payment"}
                     </p>
 
                     <h2 className="mt-3 text-3xl font-black leading-tight">
                         {canAutoLogin
                             ? "Your internet is ready."
-                            : isPaid
-                                ? "Activating your internet."
-                                : isFailed
-                                    ? "Payment was not completed."
-                                    : "Complete M-Pesa payment."}
+                            : activationPending
+                                ? "Connecting to MikroTik..."
+                                : isPaid
+                                    ? "Preparing your internet."
+                                    : isFailed
+                                        ? "Payment was not completed."
+                                        : "Complete M-Pesa payment."}
                     </h2>
 
                     <p className="mt-3 text-sm font-semibold text-slate-800">
                         {canAutoLogin
                             ? "You will be connected automatically shortly."
-                            : isPaid
-                                ? "Please wait while we activate your session."
-                                : isFailed
-                                    ? "You can go back and try again."
-                                    : "Check your phone and enter your M-Pesa PIN."}
+                            : activationPending
+                                ? "Please wait while we create your internet access."
+                                : isPaid
+                                    ? "Please wait while we activate your session."
+                                    : isFailed
+                                        ? "You can go back and try again."
+                                        : "Check your phone and enter your M-Pesa PIN."}
                     </p>
                 </section>
 
                 <section className="rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl">
                     <div className="flex items-center justify-center">
-                        <div
-                            className={`flex h-20 w-20 items-center justify-center rounded-full ${canAutoLogin || isPaid
-                                ? "bg-emerald-100 text-emerald-700"
-                                : isFailed
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-amber-100 text-amber-700"
-                                }`}
-                        >
-                            <span className="text-3xl font-black">
-                                {canAutoLogin || isPaid ? "✓" : isFailed ? "!" : "..."}
-                            </span>
-                        </div>
+                        {activationPending ? (
+                            <div className="relative flex h-24 w-24 items-center justify-center">
+                                <span className="absolute h-24 w-24 animate-ping rounded-full bg-emerald-300 opacity-30" />
+                                <span className="absolute h-16 w-16 animate-pulse rounded-full bg-emerald-100" />
+                                <span className="relative text-4xl">📶</span>
+                            </div>
+                        ) : (
+                            <div
+                                className={`flex h-20 w-20 items-center justify-center rounded-full ${canAutoLogin || isPaid
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : isFailed
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-amber-100 text-amber-700"
+                                    }`}
+                            >
+                                <span className="text-3xl font-black">
+                                    {canAutoLogin || isPaid ? "✓" : isFailed ? "!" : "..."}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-5 rounded-3xl bg-slate-50 p-4">
@@ -130,7 +144,7 @@ export default async function PaymentStatusPage({ params }: Props) {
                             </div>
 
                             <div>
-                                <p className="text-xs font-bold text-slate-500">Status</p>
+                                <p className="text-xs font-bold text-slate-500">Payment</p>
                                 <p
                                     className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black ${isPaid
                                         ? "bg-emerald-100 text-emerald-700"
@@ -143,14 +157,39 @@ export default async function PaymentStatusPage({ params }: Props) {
                                 </p>
                             </div>
 
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-slate-500">Activation</p>
+                                <p
+                                    className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black ${canAutoLogin
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : activationPending
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-slate-100 text-slate-600"
+                                        }`}
+                                >
+                                    {session?.activationStatus || "WAITING"}
+                                </p>
+                            </div>
+
                             {payment.mpesaCode && (
-                                <div className="text-right">
+                                <div className="col-span-2">
                                     <p className="text-xs font-bold text-slate-500">M-Pesa Code</p>
                                     <p className="mt-1 font-black">{payment.mpesaCode}</p>
                                 </div>
                             )}
                         </div>
                     </div>
+
+                    {activationPending && (
+                        <div className="mt-5 rounded-3xl bg-amber-50 p-4 text-center">
+                            <p className="font-black text-amber-700">
+                                Please wait, connecting you...
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-amber-700">
+                                Do not close this page. Internet will open automatically.
+                            </p>
+                        </div>
+                    )}
 
                     {isPaid && session && (
                         <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
@@ -172,13 +211,8 @@ export default async function PaymentStatusPage({ params }: Props) {
                                 <div className="rounded-2xl bg-white p-3">
                                     <p className="text-xs font-bold text-slate-500">Expires</p>
                                     <p className="mt-1 font-black">
-                                        {new Date(session.expiresAt).toLocaleString()}
+                                        {new Date(session.expiresAt).toLocaleString("en-KE")}
                                     </p>
-                                </div>
-
-                                <div className="rounded-2xl bg-white p-3">
-                                    <p className="text-xs font-bold text-slate-500">Activation</p>
-                                    <p className="mt-1 font-black">{session.activationStatus}</p>
                                 </div>
                             </div>
 
@@ -190,16 +224,6 @@ export default async function PaymentStatusPage({ params }: Props) {
                         </div>
                     )}
 
-                    <p className="mt-5 text-center text-sm font-semibold text-slate-500">
-                        {canAutoLogin
-                            ? "Please wait. You will be connected automatically."
-                            : isPaid
-                                ? "Payment received. We are activating your internet access."
-                                : isFailed
-                                    ? "Payment was not completed. Please try again."
-                                    : "This page refreshes automatically after payment."}
-                    </p>
-
                     {canAutoLogin ? (
                         <LoadingLinkButton
                             href={`/auto-login?sessionId=${session.id}`}
@@ -208,6 +232,13 @@ export default async function PaymentStatusPage({ params }: Props) {
                         >
                             Connect Now
                         </LoadingLinkButton>
+                    ) : activationPending ? (
+                        <button
+                            disabled
+                            className="mt-5 block w-full rounded-2xl bg-slate-200 px-4 py-3 text-center text-sm font-black text-slate-500"
+                        >
+                            Activating Internet...
+                        </button>
                     ) : (
                         <LoadingLinkButton
                             href="/"
@@ -218,22 +249,6 @@ export default async function PaymentStatusPage({ params }: Props) {
                         </LoadingLinkButton>
                     )}
                 </section>
-
-                <footer className="mt-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400">
-                    <p>© {new Date().getFullYear()} {portalName}</p>
-
-                    <p className="mt-2">
-                        Powered by{" "}
-                        <a
-                            href="https://craftinventors.co.ke"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-black text-emerald-300 underline-offset-4 hover:underline"
-                        >
-                            Craft Inventors
-                        </a>
-                    </p>
-                </footer>
             </div>
         </main>
     );
