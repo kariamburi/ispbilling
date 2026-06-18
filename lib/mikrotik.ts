@@ -57,32 +57,32 @@ export async function createHotspotUser({
         timeout: 10000,
     });
 
-    console.log("MT: connecting", router.host, router.port);
-
     const api = await client.connect();
-
-    console.log("MT: connected");
 
     try {
         const limitUptime = minutesToLimitUptime(durationMinutes);
         const profile = speedLimit || "default";
 
-        console.log("MT: adding user", {
-            username,
-            profile,
-            limitUptime,
-        });
+        try {
+            await api.menu("/ip/hotspot/user").add({
+                name: username,
+                password,
+                profile,
+                "limit-uptime": limitUptime,
+                disabled: "no",
+                comment: "Created by Craft Billing",
+            });
+        } catch (error: any) {
+            const message = String(error?.message || "").toLowerCase();
 
-        await api.menu("/ip/hotspot/user").add({
-            name: username,
-            password,
-            profile,
-            "limit-uptime": limitUptime,
-            disabled: "no",
-            comment: "Created by Craft Billing",
-        });
+            if (message.includes("already have user")) {
+                throw new Error(
+                    `Hotspot user ${username} already exists. Remove it from MikroTik before retrying.`
+                );
+            }
 
-        console.log("MT: user added");
+            throw error;
+        }
 
         return {
             ok: true,
@@ -91,7 +91,6 @@ export async function createHotspotUser({
             profile,
         };
     } finally {
-        console.log("MT: closing");
         try {
             client.close();
         } catch { }

@@ -30,7 +30,7 @@ async function main() {
         where: { id: "office-mikrotik" },
         update: {
             name: "Office MikroTik",
-            host: "192.168.88.1",
+            host: "10.10.10.2",
             username: "admin",
             password: "5050Paul.com",
             port: 8728,
@@ -40,7 +40,7 @@ async function main() {
         create: {
             id: "office-mikrotik",
             name: "Office MikroTik",
-            host: "192.168.88.1",
+            host: "10.10.10.2",
             username: "admin",
             password: "5050Paul.com",
             port: 8728,
