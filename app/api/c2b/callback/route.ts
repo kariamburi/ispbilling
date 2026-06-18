@@ -105,8 +105,7 @@ export async function POST(req: Request) {
                             where: { id: session.id },
                             data: {
                                 activationStatus: "FAILED",
-                                activationError:
-                                    routerError?.message || "MikroTik activation failed",
+                                activationError: JSON.stringify(routerError, Object.getOwnPropertyNames(routerError)).slice(0, 500),
                             },
                         });
                     }
