@@ -50,7 +50,10 @@ export async function markPaymentPaid(formData: FormData) {
         });
 
         if (pkg) {
-            const username = paidPayment.phone;
+            const username = `${paidPayment.phone}-${Date.now()
+                .toString()
+                .slice(-5)}`;
+
             const password = String(Math.floor(1000 + Math.random() * 9000));
             const expiresAt = new Date(Date.now() + pkg.durationMin * 60 * 1000);
 
@@ -89,18 +92,20 @@ export async function markPaymentPaid(formData: FormData) {
                     where: { id: session.id },
                     data: {
                         activationStatus: "FAILED",
-                        activationError: error?.message || "MikroTik activation failed",
+                        activationError:
+                            error?.message || "MikroTik activation failed",
                     },
                 });
             }
 
             try {
+                const loginLink = `${portalUrl}/auto-login?sessionId=${session.id}`;
+
                 await sendSms({
-                    to: username,
-                    message: `${portalName} payment received. Package: ${pkg.name
-                        }. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
-                            expiresAt
-                        )}. Portal: ${portalUrl}`,
+                    to: paidPayment.phone,
+                    message: `${portalName} payment received. Package: ${pkg.name}. Tap to connect: ${loginLink}. Expires: ${formatDateTime(
+                        expiresAt
+                    )}. If the link does not open, use Username: ${username} Password: ${password}`,
                 });
             } catch (smsError) {
                 console.error("SMS failed:", smsError);

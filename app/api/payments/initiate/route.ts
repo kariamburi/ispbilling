@@ -152,9 +152,9 @@ export async function POST(req: Request) {
 
                 await sendSms({
                     to: phone,
-                    message: `${portalName} free trial is active. Tap to connect: ${loginLink}. Username: ${username}. Password: ${password}. Expires: ${formatDateTime(
+                    message: `${portalName}: Your free trial is active. Connect here: ${loginLink}. Expires: ${formatDateTime(
                         expiresAt
-                    )}`,
+                    )}. Backup login: ${username}/${password}`,
                 });
             } catch (smsError) {
                 console.error("SMS failed:", smsError);
