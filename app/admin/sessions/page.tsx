@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { deactivateSession, retryActivation } from "./actions";
+import { deactivateSession, deleteExpiredSession, retryActivation } from "./actions";
 import { AlertTriangle, CheckCircle2, Clock, Wifi } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -175,6 +175,22 @@ export default async function AdminSessionsPage() {
                           />
                           <button className="w-full cursor-pointer rounded-xl bg-red-500 px-3 py-2 text-xs font-black text-white">
                             Deactivate
+                          </button>
+                        </form>
+                      )}
+                      {!isActive && (
+                        <form action={deleteExpiredSession}>
+                          <input
+                            type="hidden"
+                            name="sessionId"
+                            value={session.id}
+                          />
+
+                          <button
+                            type="submit"
+                            className="w-full cursor-pointer rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
+                          >
+                            Delete
                           </button>
                         </form>
                       )}

@@ -29,7 +29,23 @@ export default async function HomePage({ searchParams }: Props) {
     where: { active: true },
     orderBy: { price: "asc" },
   });
-
+  const activeSession =
+    params.mac
+      ? await prisma.internetSession.findFirst({
+        where: {
+          mac: params.mac,
+          active: true,
+          expiresAt: { gt: new Date() },
+          activationStatus: "ACTIVATED",
+          username: { not: null },
+          password: { not: null },
+        },
+        orderBy: { expiresAt: "desc" },
+        include: {
+          customer: true,
+        },
+      })
+      : null;
   const errorMessage =
     params.error === "free_trial_used"
       ? "This phone number has already used the free trial."
@@ -138,32 +154,72 @@ export default async function HomePage({ searchParams }: Props) {
           id="login-form"
           className="mb-6 scroll-mt-6 rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl"
         >
-          <h2 className="text-lg font-black">Already Have Access?</h2>
-          <p className="mt-1 text-sm font-medium text-slate-500">
-            Enter the username and password sent to your phone.
-          </p>
+          {activeSession ? (
+            <>
+              <h2 className="text-lg font-black">Welcome Back</h2>
 
-          <form action="/api/hotspot/login" method="POST" className="mt-4 space-y-3">
-            <input
-              type="text"
-              name="username"
-              placeholder="Username / Phone number"
-              required
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
-            />
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                We found an active internet session for this device.
+              </p>
 
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              required
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
-            />
+              <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                Active until{" "}
+                {new Date(activeSession.expiresAt).toLocaleString("en-KE")}
+              </div>
 
-            {params.mac && <input type="hidden" name="mac" value={params.mac} />}
+              <form action="/api/hotspot/login" method="POST" className="mt-4">
+                <input
+                  type="hidden"
+                  name="username"
+                  value={activeSession.username || ""}
+                />
 
-            <LoginSubmitButton />
-          </form>
+                <input
+                  type="hidden"
+                  name="password"
+                  value={activeSession.password || ""}
+                />
+
+                <input
+                  type="hidden"
+                  name="mac"
+                  value={params.mac || ""}
+                />
+
+                <LoginSubmitButton label="Reconnect Internet" />
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-black">Already Have Access?</h2>
+
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                Enter the username and password sent to your phone.
+              </p>
+
+              <form action="/api/hotspot/login" method="POST" className="mt-4 space-y-3">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username / Phone number"
+                  required
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
+                />
+
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  required
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
+                />
+
+                {params.mac && <input type="hidden" name="mac" value={params.mac} />}
+
+                <LoginSubmitButton />
+              </form>
+            </>
+          )}
         </section>
 
         {settings?.whatsappPhone && (

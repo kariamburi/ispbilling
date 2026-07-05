@@ -3,7 +3,13 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-export default function LoginSubmitButton() {
+export default function LoginSubmitButton({
+    label = "Login to Internet",
+    loadingLabel = "Connecting...",
+}: {
+    label?: string;
+    loadingLabel?: string;
+}) {
     const { pending } = useFormStatus();
     const [clicked, setClicked] = useState(false);
     const clickedRef = useRef(false);
@@ -34,7 +40,7 @@ export default function LoginSubmitButton() {
                 <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
             )}
 
-            {loading ? "Connecting..." : "Login to Internet"}
+            {loading ? loadingLabel : label}
         </button>
     );
 }

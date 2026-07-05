@@ -4,7 +4,31 @@ import { prisma } from "@/lib/prisma";
 import { createHotspotUser } from "@/lib/mikrotik";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+export async function deleteExpiredSession(formData: FormData) {
+    const sessionId = String(formData.get("sessionId"));
 
+    const session = await prisma.internetSession.findUnique({
+        where: { id: sessionId },
+    });
+
+    if (!session) {
+        redirect("/dashboard/sessions");
+    }
+
+    const now = new Date();
+    const expired = session.expiresAt <= now || !session.active;
+
+    if (!expired) {
+        redirect("/dashboard/sessions");
+    }
+
+    await prisma.internetSession.delete({
+        where: { id: sessionId },
+    });
+
+    revalidatePath("/dashboard/sessions");
+    redirect("/dashboard/sessions");
+}
 export async function retryActivation(formData: FormData) {
     const sessionId = String(formData.get("sessionId"));
 
