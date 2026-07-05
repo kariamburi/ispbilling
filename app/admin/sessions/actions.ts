@@ -12,22 +12,22 @@ export async function deleteExpiredSession(formData: FormData) {
     });
 
     if (!session) {
-        redirect("/dashboard/sessions");
+        redirect("/admin/sessions");
     }
 
     const now = new Date();
     const expired = session.expiresAt <= now || !session.active;
 
     if (!expired) {
-        redirect("/dashboard/sessions");
+        redirect("/admin/sessions");
     }
 
     await prisma.internetSession.delete({
         where: { id: sessionId },
     });
 
-    revalidatePath("/dashboard/sessions");
-    redirect("/dashboard/sessions");
+    revalidatePath("/admin/sessions");
+    redirect("/admin/sessions");
 }
 export async function retryActivation(formData: FormData) {
     const sessionId = String(formData.get("sessionId"));
