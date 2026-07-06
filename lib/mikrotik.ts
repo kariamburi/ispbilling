@@ -15,6 +15,11 @@ type CreateHotspotUserArgs = {
     speedLimit?: string | null;
 };
 
+type RouterConnection = {
+    client: RouterOSClient;
+    api: any;
+};
+
 export async function getActiveRouter() {
     const router = await prisma.router.findFirst({
         where: { active: true },
@@ -30,15 +35,48 @@ export async function getActiveRouter() {
 
 function minutesToLimitUptime(minutes: number) {
     if (!minutes || minutes <= 0) return "30m";
-
     if (minutes < 60) return `${minutes}m`;
 
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 
-    if (remainingMinutes === 0) return `${hours}h`;
+    return remainingMinutes === 0 ? `${hours}h` : `${hours}h${remainingMinutes}m`;
+}
 
-    return `${hours}h${remainingMinutes}m`;
+function cleanProfile(profile?: string | null) {
+    const value = String(profile || "").trim();
+    return value || "default";
+}
+
+function getErrorMessage(error: unknown) {
+    if (error instanceof Error) return error.message;
+    return String(error || "Unknown MikroTik error");
+}
+
+function isAlreadyExistsError(error: unknown) {
+    const message = getErrorMessage(error).toLowerCase();
+
+    return (
+        message.includes("already") ||
+        message.includes("failure: already") ||
+        message.includes("already have")
+    );
+}
+
+async function connectRouter(): Promise<RouterConnection> {
+    const router = await getActiveRouter();
+
+    const client = new RouterOSClient({
+        host: router.host,
+        user: router.username,
+        password: router.password,
+        port: router.port,
+        timeout: 30000,
+    });
+
+    const api: any = await client.connect();
+
+    return { client, api };
 }
 
 export async function createHotspotUser({
@@ -47,41 +85,27 @@ export async function createHotspotUser({
     durationMinutes,
     speedLimit,
 }: CreateHotspotUserArgs) {
-    const router = await getActiveRouter();
-
-    const client = new RouterOSClient({
-        host: router.host,
-        user: router.username,
-        password: router.password,
-        port: router.port,
-        timeout: 10000,
-    });
-
-    const api = await client.connect();
+    const { client, api } = await connectRouter();
 
     try {
         const limitUptime = minutesToLimitUptime(durationMinutes);
-        const profile = speedLimit || "default";
+        const profile = cleanProfile(speedLimit);
 
         try {
-            await api.menu("/ip/hotspot/user").add({
-                name: username,
-                password,
-                profile,
-                "limit-uptime": limitUptime,
-                disabled: "no",
-                comment: "Created by Craft Billing",
-            });
-        } catch (error: any) {
-            const message = String(error?.message || "").toLowerCase();
-
-            if (message.includes("already have user")) {
-                throw new Error(
-                    `Hotspot user ${username} already exists. Remove it from MikroTik before retrying.`
-                );
+            await api.write("/ip/hotspot/user/add", [
+                `=name=${username}`,
+                `=password=${password}`,
+                `=profile=${profile}`,
+                `=limit-uptime=${limitUptime}`,
+                `=disabled=no`,
+                `=comment=Created by Craft Billing`,
+            ]);
+        } catch (error: unknown) {
+            if (isAlreadyExistsError(error)) {
+                throw new Error(`Hotspot user ${username} already exists.`);
             }
 
-            throw error;
+            throw new Error(`MikroTik user creation failed: ${getErrorMessage(error)}`);
         }
 
         return {
@@ -96,60 +120,78 @@ export async function createHotspotUser({
         } catch { }
     }
 }
+
+async function findHotspotUserId(api: any, username: string) {
+    const users = await api.write("/ip/hotspot/user/print", [
+        `?name=${username}`,
+        "=.proplist=.id,name",
+    ]);
+
+    return users?.[0]?.[".id"] || null;
+}
+
+async function findActiveSessionId(api: any, username: string) {
+    const sessions = await api.write("/ip/hotspot/active/print", [
+        `?user=${username}`,
+        "=.proplist=.id,user",
+    ]);
+
+    return sessions?.[0]?.[".id"] || null;
+}
+
+async function findCookieId(api: any, username: string) {
+    const cookies = await api.write("/ip/hotspot/cookie/print", [
+        `?user=${username}`,
+        "=.proplist=.id,user",
+    ]);
+
+    return cookies?.[0]?.[".id"] || null;
+}
+
 export async function removeHotspotUser(username: string) {
-    const router = await getActiveRouter();
-
-    const client = new RouterOSClient({
-        host: router.host,
-        user: router.username,
-        password: router.password,
-        port: router.port,
-        timeout: 10000,
-    });
-
-    const api = await client.connect();
+    const { client, api } = await connectRouter();
 
     try {
-        try {
-            await api.menu("/ip/hotspot/user").remove(username);
-        } catch (error) {
-            console.error("Remove hotspot user failed:", error);
-        }
+        const userId = await findHotspotUserId(api, username);
+
+        if (!userId) return true;
+
+        await api.write("/ip/hotspot/user/remove", [`=.id=${userId}`]);
 
         return true;
+    } catch (error) {
+        console.error("Remove hotspot user failed:", error);
+        return false;
     } finally {
         try {
             client.close();
         } catch { }
     }
 }
+
 export async function cleanupHotspotUser(username: string) {
-    const router = await getActiveRouter();
-
-    const client = new RouterOSClient({
-        host: router.host,
-        user: router.username,
-        password: router.password,
-        port: router.port,
-        timeout: 10000,
-    });
-
-    const api = await client.connect();
+    const { client, api } = await connectRouter();
 
     try {
-        try {
-            await api.menu("/ip/hotspot/active").remove(username);
-        } catch { }
+        const activeId = await findActiveSessionId(api, username);
+        if (activeId) {
+            await api.write("/ip/hotspot/active/remove", [`=.id=${activeId}`]);
+        }
 
-        try {
-            await api.menu("/ip/hotspot/cookie").remove(username);
-        } catch { }
+        const cookieId = await findCookieId(api, username);
+        if (cookieId) {
+            await api.write("/ip/hotspot/cookie/remove", [`=.id=${cookieId}`]);
+        }
 
-        try {
-            await api.menu("/ip/hotspot/user").remove(username);
-        } catch { }
+        const userId = await findHotspotUserId(api, username);
+        if (userId) {
+            await api.write("/ip/hotspot/user/remove", [`=.id=${userId}`]);
+        }
 
         return true;
+    } catch (error) {
+        console.error("Cleanup hotspot user failed:", error);
+        return false;
     } finally {
         try {
             client.close();
