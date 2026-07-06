@@ -70,21 +70,41 @@ export async function sendStkPush({
                 Password: password,
                 Timestamp: timestamp,
                 TransactionType: "CustomerPayBillOnline",
-                Amount: amount,
+                Amount: Math.round(Number(amount)),
                 PartyA: phone,
                 PartyB: shortcode,
                 PhoneNumber: phone,
                 CallBackURL: callbackUrl,
-                AccountReference: accountReference,
-                TransactionDesc: transactionDesc,
+                AccountReference: accountReference.slice(0, 12),
+                TransactionDesc: transactionDesc.slice(0, 13),
             }),
         }
     );
 
-    const data = await res.json();
+    const text = await res.text();
 
-    if (!res.ok) {
-        throw new Error(data?.errorMessage || "Failed to send STK Push");
+    let data: any;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        data = { raw: text };
+    }
+
+    console.log("STK PUSH RESPONSE:", {
+        status: res.status,
+        ok: res.ok,
+        data,
+    });
+
+    if (!res.ok || data.ResponseCode !== "0") {
+        throw new Error(
+            data?.errorMessage ||
+            data?.ResponseDescription ||
+            data?.CustomerMessage ||
+            data?.error_description ||
+            data?.raw ||
+            "Failed to send STK Push"
+        );
     }
 
     return data as {
