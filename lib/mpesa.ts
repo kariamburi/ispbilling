@@ -46,8 +46,9 @@ export async function sendStkPush({
     accountReference: string;
     transactionDesc: string;
 }) {
+    console.log("===== STARTING STK PUSH =====");
     const token = await getMpesaAccessToken();
-
+    console.log("✓ Access token obtained");
     const shortcode = process.env.MPESA_SHORTCODE!;
     const passkey = process.env.MPESA_PASSKEY!;
     const callbackUrl = process.env.MPESA_CALLBACK_URL!;
@@ -56,7 +57,7 @@ export async function sendStkPush({
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString(
         "base64"
     );
-
+    console.log("Sending STK request...");
     const res = await fetch(
         "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
         {
