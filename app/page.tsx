@@ -6,6 +6,8 @@ type Props = {
   searchParams: Promise<{
     error?: string;
     mac?: string;
+    ip?: string;
+    linkLogin?: string;
   }>;
 };
 
@@ -29,23 +31,22 @@ export default async function HomePage({ searchParams }: Props) {
     where: { active: true },
     orderBy: { price: "asc" },
   });
-  const activeSession =
-    params.mac
-      ? await prisma.internetSession.findFirst({
-        where: {
-          mac: params.mac,
-          active: true,
-          expiresAt: { gt: new Date() },
-          activationStatus: "ACTIVATED",
-          username: { not: null },
-          password: { not: null },
-        },
-        orderBy: { expiresAt: "desc" },
-        include: {
-          customer: true,
-        },
-      })
-      : null;
+
+  const activeSession = params.mac
+    ? await prisma.internetSession.findFirst({
+      where: {
+        mac: params.mac,
+        active: true,
+        expiresAt: { gt: new Date() },
+        activationStatus: "ACTIVATED",
+        username: { not: null },
+        password: { not: null },
+      },
+      orderBy: { expiresAt: "desc" },
+      include: { customer: true },
+    })
+    : null;
+
   const errorMessage =
     params.error === "free_trial_used"
       ? "This phone number has already used the free trial."
@@ -55,7 +56,11 @@ export default async function HomePage({ searchParams }: Props) {
           ? "Your account has been blocked. Please contact support."
           : params.error === "missing_login"
             ? "Username and password are required."
-            : null;
+            : params.error === "missing_phone"
+              ? "Phone number is required."
+              : params.error === "no_active_session"
+                ? "No active session found for that phone number."
+                : null;
 
   return (
     <main className="min-h-screen bg-[#061b13] text-white">
@@ -69,36 +74,62 @@ export default async function HomePage({ searchParams }: Props) {
               {settings?.portalName || "CRAFT WIFI"}
             </h1>
           </div>
-
-          {/**  <a
-            href="#login-form"
-            className="cursor-pointer rounded-full border border-emerald-400/30 bg-white/10 px-4 py-2 text-xs font-bold text-emerald-200 transition hover:bg-white hover:text-slate-950"
-          >
-            Secure Login
-          </a>*/}
         </header>
-
-        {/** <section className="mb-6 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-emerald-400 via-emerald-500 to-lime-400 p-6 text-slate-950 shadow-2xl">
-          <div className="max-w-xl">
-            <p className="text-sm font-black uppercase tracking-wide">
-              Fast • Affordable • Reliable
-            </p>
-
-            <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
-              Stay connected with high-speed internet.
-            </h2>
-
-            <p className="mt-3 text-sm font-semibold text-slate-800">
-              {settings?.subtitle || "Fast internet for Manguo Estate"}
-            </p>
-          </div>
-        </section> */}
 
         {errorMessage && (
           <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
             {errorMessage}
           </div>
         )}
+
+        <section
+          id="login-form"
+          className="mb-6 scroll-mt-6 rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl"
+        >
+          {activeSession ? (
+            <>
+              <h2 className="text-lg font-black">Welcome Back</h2>
+
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                We found an active internet session for this device.
+              </p>
+
+              <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                Active until{" "}
+                {new Date(activeSession.expiresAt).toLocaleString("en-KE")}
+              </div>
+
+              <form action="/api/hotspot/login" method="POST" className="mt-4">
+                <input type="hidden" name="username" value={activeSession.username || ""} />
+                <input type="hidden" name="password" value={activeSession.password || ""} />
+                <input type="hidden" name="mac" value={params.mac || ""} />
+                <LoginSubmitButton label="Reconnect Internet" />
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-black">Already Have Access?</h2>
+
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                Enter your phone number and we will reconnect your active session.
+              </p>
+
+              <form action="/api/session/reconnect" method="POST" className="mt-4 space-y-3">
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="07XXXXXXXX"
+                  required
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
+                />
+
+                <input type="hidden" name="mac" value={params.mac || ""} />
+
+                <LoginSubmitButton label="Reconnect Internet" />
+              </form>
+            </>
+          )}
+        </section>
 
         <section className="mb-6">
           <div className="mb-4">
@@ -150,68 +181,6 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
         </section>
 
-        <section
-          id="login-form"
-          className="mb-6 scroll-mt-6 rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-xl"
-        >
-          {activeSession ? (
-            <>
-              <h2 className="text-lg font-black">Welcome Back</h2>
-
-              <p className="mt-1 text-sm font-medium text-slate-500">
-                We found an active internet session for this device.
-              </p>
-
-              <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-                Active until{" "}
-                {new Date(activeSession.expiresAt).toLocaleString("en-KE")}
-              </div>
-
-              <form action="/api/hotspot/login" method="POST" className="mt-4">
-                <input
-                  type="hidden"
-                  name="username"
-                  value={activeSession.username || ""}
-                />
-
-                <input
-                  type="hidden"
-                  name="password"
-                  value={activeSession.password || ""}
-                />
-
-                <input
-                  type="hidden"
-                  name="mac"
-                  value={params.mac || ""}
-                />
-
-                <LoginSubmitButton label="Reconnect Internet" />
-              </form>
-            </>
-          ) : (
-            <>
-              <h2 className="text-lg font-black">Already Have Access?</h2>
-
-              <p className="mt-1 text-sm font-medium text-slate-500">
-                Enter your phone number and we will reconnect your active session.
-              </p>
-
-              <form action="/api/session/reconnect" method="POST" className="mt-4 space-y-3">
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="07XXXXXXXX"
-                  required
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
-
-                <LoginSubmitButton label="Reconnect Internet" />
-              </form>
-            </>
-          )}
-        </section>
-
         {settings?.whatsappPhone && (
           <LoadingLinkButton
             href={`https://wa.me/${settings.whatsappPhone.replace(/\D/g, "")}`}
@@ -221,22 +190,6 @@ export default async function HomePage({ searchParams }: Props) {
             Need help? Chat on WhatsApp
           </LoadingLinkButton>
         )}
-
-        <footer className="mt-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} {settings?.portalName || "CRAFT WIFI"}</p>
-
-          <p className="mt-2">
-            Powered by{" "}
-            <a
-              href="https://craftinventors.co.ke"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-black text-emerald-300 underline-offset-4 hover:underline"
-            >
-              Craft Inventors
-            </a>
-          </p>
-        </footer>
       </div>
     </main>
   );

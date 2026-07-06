@@ -2,6 +2,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || "https://billing.craftinventors.co.ke";
+
 function normalizePhone(phone: string) {
     let value = phone.trim().replace(/\s+/g, "");
 
@@ -18,7 +21,9 @@ export async function POST(req: Request) {
     const mac = String(formData.get("mac") || "").trim();
 
     if (!phone) {
-        return NextResponse.redirect(new URL("/?error=missing_phone", req.url), 303);
+        const url = new URL("/", APP_URL);
+        url.searchParams.set("error", "missing_phone");
+        return NextResponse.redirect(url, 303);
     }
 
     const session = await prisma.internetSession.findFirst({
@@ -42,7 +47,7 @@ export async function POST(req: Request) {
     });
 
     if (!session) {
-        const url = new URL("/", req.url);
+        const url = new URL("/", APP_URL);
         url.searchParams.set("error", "no_active_session");
 
         if (mac) {
@@ -60,7 +65,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.redirect(
-        new URL(`/auto-login?sessionId=${session.id}`, req.url),
+        new URL(`/auto-login?sessionId=${session.id}`, APP_URL),
         303
     );
 }
