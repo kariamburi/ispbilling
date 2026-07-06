@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { markPaymentPaid } from "./actions";
+import { deletePendingPayment, markPaymentPaid } from "./actions";
 import { Banknote, CheckCircle2, Clock, CreditCard } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -170,16 +170,21 @@ export default async function AdminPaymentsPage() {
 
                   <td className="p-4">
                     {payment.status === "PENDING" && (
-                      <form action={markPaymentPaid}>
-                        <input
-                          type="hidden"
-                          name="paymentId"
-                          value={payment.id}
-                        />
-                        <button className="cursor-pointer rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-slate-950">
-                          Mark Paid
-                        </button>
-                      </form>
+                      <div className="flex gap-2">
+                        <form action={markPaymentPaid}>
+                          <input type="hidden" name="paymentId" value={payment.id} />
+                          <button className="cursor-pointer rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-slate-950">
+                            Mark Paid
+                          </button>
+                        </form>
+
+                        <form action={deletePendingPayment}>
+                          <input type="hidden" name="paymentId" value={payment.id} />
+                          <button className="cursor-pointer rounded-xl bg-red-500 px-3 py-2 text-xs font-black text-white">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
                     )}
                   </td>
                 </tr>

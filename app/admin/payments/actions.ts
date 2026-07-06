@@ -12,7 +12,26 @@ function formatDateTime(date: Date) {
         timeStyle: "short",
     }).format(date);
 }
+export async function deletePendingPayment(formData: FormData) {
+    const paymentId = String(formData.get("paymentId"));
 
+    const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+    });
+
+    if (!payment || payment.status !== "PENDING") {
+        redirect("/admin/payments");
+    }
+
+    await prisma.payment.delete({
+        where: { id: paymentId },
+    });
+
+    revalidatePath("/admin/payments");
+    revalidatePath("/admin");
+
+    redirect("/admin/payments");
+}
 export async function markPaymentPaid(formData: FormData) {
     const paymentId = String(formData.get("paymentId"));
 
