@@ -194,29 +194,19 @@ export default async function HomePage({ searchParams }: Props) {
               <h2 className="text-lg font-black">Already Have Access?</h2>
 
               <p className="mt-1 text-sm font-medium text-slate-500">
-                Enter the username and password sent to your phone.
+                Enter your phone number and we will reconnect your active session.
               </p>
 
-              <form action="/api/hotspot/login" method="POST" className="mt-4 space-y-3">
+              <form action="/api/session/reconnect" method="POST" className="mt-4 space-y-3">
                 <input
-                  type="text"
-                  name="username"
-                  placeholder="Username / Phone number"
+                  type="tel"
+                  name="phone"
+                  placeholder="07XXXXXXXX"
                   required
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
                 />
 
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  required
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
-                />
-
-                {params.mac && <input type="hidden" name="mac" value={params.mac} />}
-
-                <LoginSubmitButton />
+                <LoginSubmitButton label="Reconnect Internet" />
               </form>
             </>
           )}
