@@ -95,11 +95,6 @@ export default async function PayPage({ searchParams }: Props) {
             </p>
           )}
 
-          {!pkg.isFreeTrial && (
-            <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-600">
-              You will receive an M-Pesa STK push on your phone.
-            </p>
-          )}
 
           <SubmitPaymentButton
             packageId={pkg.id}
