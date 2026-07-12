@@ -101,26 +101,11 @@ export default async function PayPage({ searchParams }: Props) {
             </p>
           )}
 
-          <form action="/api/payments/initiate" method="POST" className="mt-5 space-y-4">
-            <input type="hidden" name="packageId" value={pkg.id} />
-            <input type="hidden" name="mac" value={params.mac || ""} />
-
-            <div>
-              <label className="text-sm font-black">
-                {pkg.isFreeTrial ? "Phone Number" : "M-Pesa Phone Number"}
-              </label>
-
-              <input
-                name="phone"
-                type="tel"
-                required
-                placeholder="07XXXXXXXX"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-emerald-500 focus:bg-white"
-              />
-            </div>
-
-            <SubmitPaymentButton isFreeTrial={pkg.isFreeTrial} />
-          </form>
+          <SubmitPaymentButton
+            packageId={pkg.id}
+            mac={params.mac || ""}
+            isFreeTrial={pkg.isFreeTrial}
+          />
         </section>
 
         <LoadingLinkButton
