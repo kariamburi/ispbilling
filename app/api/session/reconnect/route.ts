@@ -5,15 +5,27 @@ import { prisma } from "@/lib/prisma";
 const APP_URL =
     process.env.NEXT_PUBLIC_APP_URL || "https://billing.craftinventors.co.ke";
 
-function normalizePhone(phone: string) {
-    let value = phone.trim().replace(/\s+/g, "");
+function normalizePhone(phone: string): string {
+    const digits = phone.replace(/\D/g, "");
 
-    if (value.startsWith("07")) value = "254" + value.substring(1);
-    if (value.startsWith("+254")) value = value.substring(1);
+    // Kenyan local format: 07XXXXXXXX or 01XXXXXXXX
+    if (/^0[17]\d{8}$/.test(digits)) {
+        return `254${digits.slice(1)}`;
+    }
 
-    return value;
+    // Kenyan international format: 2547XXXXXXXX or 2541XXXXXXXX
+    if (/^254[17]\d{8}$/.test(digits)) {
+        return digits;
+    }
+
+    // Without country code: 7XXXXXXXX or 1XXXXXXXX
+    if (/^[17]\d{8}$/.test(digits)) {
+        return `254${digits}`;
+    }
+
+    // Invalid number
+    return "";
 }
-
 export async function POST(req: Request) {
     const formData = await req.formData();
 
